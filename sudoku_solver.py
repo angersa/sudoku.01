@@ -27,7 +27,10 @@ sudoku = {'A1': '4', 'A2': '7', ...}
 from itertools import combinations
 
 
-# test problem
+#######################################################################
+# Test problems
+#######################################################################
+
 s_0 = [
     '479030102', '012670900', '000010704',
     '000680200', '040000863', '568002090',
@@ -40,10 +43,33 @@ s_1 = [
     '860005900', '000008070', '000200000'
 ]
 
-test_row = {
-    'A1': '4', 'A2': '7', 'A3': '9', 'A4': '3568', 'A5': '1',
-    'A6': '2', 'A7': '56', 'A8': '56', 'A9': '568'
-}
+# Grille avancée LaPresse 29 déc. 2018
+s_2 = [
+    '900000008', '030201060', '006000900',
+    '040805000', '000000105', '090103000',
+    '004039080', '000807000', '200540070'
+]
+
+# Grille invalide à plusieurs solutions
+s_3 = [
+    '300080006', '816000000', '970000005',
+    '500103900', '000060000', '000000010',
+    '001000000', '000000400', '002000700'
+]
+
+# Sudoku valide à seulement 17 cases données
+s_4 = [
+    '000000500', '801000000', '000043000',
+    '000000020', '070000030', '800100000',
+    '600003000', '000400200', '075000600'
+]
+
+# Sudoku valide à seulement 17 cases données (plusieurs solutions)
+s_5 = [
+    '000000500', '801000000', '000430000',
+    '000000020', '070000030', '800100000',
+    '600003000', '000400200', '075000600'
+]
 
 
 # Some global variables needed by many methods
@@ -63,16 +89,13 @@ def list_to_sudoku(list_representation):
     grid by boxes
     :return sudoku: a dictionary representing a sudoku puzzle
     """
-
     digits, sudoku = [], {}
-
     # reorder list
     for bi in range(3):
         for i in range(3):
             for bj in range(3):
                 for j in range(3):
                     digits.append(list_representation[3 * bi + bj][3 * i + j])
-
     # write dictionary
     for i in range(9):
         for j in range(9):
@@ -95,9 +118,11 @@ def print_sudoku(sudoku):
     h_sep = '+'.join(['-' * ((1 + width) * 3)] * 3)
     for r in rows:
         print(' ' + ' '.join(sudoku[r + c].center(width) + ('|' if c in '36'
-                                                            else '') for c in cols))
+                                                            else '') for c in
+                             cols))
         if r in 'CF':
             print(h_sep)
+    print()
 
 
 #######################################################################
@@ -173,6 +198,11 @@ def remove_digits(string_1, string_2):
 
 
 def union(strings):
+    """
+    Returns the union of all the strings in the list received as
+    :param strings: the list of strings
+    :return: a string
+    """
     new_string = strings[0]
     for i in range(1, len(strings)):
         for d in strings[i]:
@@ -200,6 +230,19 @@ def get_subgroups(group_1, group_2):
     return intersection, comp_1, comp_2
 
 
+def get_smallest_cell(sudoku):
+    """
+    Returns the address of the cell with the fewest possible values.
+    """
+    n_digits = 9
+    cell_id = ''
+    for cell, value in sudoku.items():
+        if len(value) > 1 and len(value) < n_digits:
+            n_digits = len(value)
+            cell_id = cell
+    return cell_id
+
+
 def progression(sudoku):
     """
     Sums the length of all string in the sudoku cells. A completely
@@ -221,30 +264,31 @@ def validate(sudoku):
     values (empty cell). A completed sudoku must have a singl occuence
     of all digits in each row, column and box"
     :param sudoku: a sudoku dictionary
-    :return bool: True if valid
+    :return bool: True if valid, True if solved
     """
     for v in sudoku.values():
         if len(v) < 1:
-            return False
+            return False, False
     if progression(sudoku) == 81:
         groups = [[r + c for r in 'ABCDEFGHI'] for c in '123456789'] + \
-         [[r + c for c in '123456789'] for r in 'ABCDEFGHI'] + \
-         [[r+c for r in 'ABC' for c in '123']] + \
-         [[r+c for r in 'DEF' for c in '123']] + \
-         [[r+c for r in 'GHI' for c in '123']] + \
-         [[r+c for r in 'ABC' for c in '456']] + \
-         [[r+c for r in 'DEF' for c in '456']] + \
-         [[r+c for r in 'GHI' for c in '456']] + \
-         [[r+c for r in 'ABC' for c in '789']] + \
-         [[r+c for r in 'DEF' for c in '789']] + \
-         [[r+c for r in 'GHI' for c in '789']]
+            [[r + c for c in '123456789'] for r in 'ABCDEFGHI'] + \
+            [[r + c for r in 'ABC' for c in '123']] + \
+            [[r + c for r in 'DEF' for c in '123']] + \
+            [[r + c for r in 'GHI' for c in '123']] + \
+            [[r + c for r in 'ABC' for c in '456']] + \
+            [[r + c for r in 'DEF' for c in '456']] + \
+            [[r + c for r in 'GHI' for c in '456']] + \
+            [[r + c for r in 'ABC' for c in '789']] + \
+            [[r + c for r in 'DEF' for c in '789']] + \
+            [[r + c for r in 'GHI' for c in '789']]
         for group in groups:
             digits = []
             for cell in group:
                 digits.append(sudoku[cell])
             if sorted(digits) != [str(i) for i in range(1, 10)]:
-                return False
-    return True
+                return False, False
+        return True, True
+    return True, False
 
 
 #######################################################################
@@ -265,12 +309,8 @@ def logic_1(sudoku):
             for pos in dependencies:
                 if len(sudoku[pos]) == 1:
                     assigned_values.append(sudoku[pos])
-            # remove them from possibles
             for assigned in assigned_values:
                 sudoku[cell] = remove_digits(sudoku[cell], assigned)
-                if len(sudoku[cell]) == 0:
-                    print('Logic test 1 went wrong {} removed {}'.format(
-                        cell, assigned))
 
 
 #######################################################################
@@ -301,16 +341,10 @@ def logic_2(sudoku):
             for d in sudoku[cell]:
                 if d not in col_values:
                     sudoku[cell] = d
-                    print('Logic test 2 found cell {} == {}'.format(
-                        cell, sudoku[cell]))
                 elif d not in row_values:
                     sudoku[cell] = d
-                    print('Logic test 2 found cell {} == {}'.format(
-                        cell, sudoku[cell]))
                 elif d not in box_values:
                     sudoku[cell] = d
-                    print('Logic test 2 found cell {} == {}'.format(
-                        cell, sudoku[cell]))
 
 
 #######################################################################
@@ -338,14 +372,10 @@ def logic_3(sudoku):
                 digits.append(sudoku[cell])
             digits = union(digits)
             if len(digits) == len(p):
-                print(p, digits)
+                # print(p, digits)
                 for c in unsolved_cells:
                     if c not in p:
                         sudoku[c] = remove_digits(sudoku[c], digits)
-                        print(
-                            "Logic test 3 states that {} cannot be in cell {}"
-                            .format(digits, c)
-                            )
 
 
 #######################################################################
@@ -353,7 +383,11 @@ def logic_3(sudoku):
 #######################################################################
 def logic_4(sudoku):
     """
-
+    for each unresolved cell, check if the possible values are unique to
+    the row or column compared to the box. If unique in either row/col
+    or box, the value can be removed form the other cells of the row/col
+    or box.
+    :param sudoku:
     """
     for cell in [*sudoku]:
         if len(sudoku[cell]) > 1:
@@ -373,72 +407,103 @@ def logic_4(sudoku):
             for cell in bc_comp_2:
                 bc_comp_2_val += sudoku[cell]
             for cell in br_int:
-                print("test 4 to", cell)
                 for d in sudoku[cell]:
                     if d not in br_comp_1_val:
                         for c in br_comp_2:
                             if len(sudoku[c]) > 1:
-                                print(c, sudoku[c], d)
                                 sudoku[c] = remove_digits(sudoku[c], d)
                     elif d not in br_comp_2_val:
                         for c in br_comp_1:
                             if len(sudoku[c]) > 1:
-                                print(c, sudoku[c], d)
                                 sudoku[c] = remove_digits(sudoku[c], d)
             for cell in bc_int:
                 for d in sudoku[cell]:
                     if d not in bc_comp_1_val:
                         for c in bc_comp_2:
                             if len(sudoku[c]) > 1:
-                                print(c, sudoku[c], d)
                                 sudoku[c] = remove_digits(sudoku[c], d)
                     elif d not in bc_comp_2_val:
                         for c in bc_comp_1:
                             if len(sudoku[c]) > 1:
-                                print(c, sudoku[c], d)
                                 sudoku[c] = remove_digits(sudoku[c], d)
 
 
 #######################################################################
 # Logic tests application
 #######################################################################
-def logic_tests(sudoku):
+def logic_tests(sudoku, level=3):
     """
     Applies the three logic tests as long as the sudoku is progressing
     :param sudoku: a sudoku dictionary
+    : return sudoku, valid, solved:
     """
+    valid, solved = validate(sudoku)
     state_i, state = 729, progression(sudoku)
-    print("\nSudoku state =", state)
-    while state_i > state:
-        print("\nSudoku state =", state)
-        print("*******************************************************")
-        print_sudoku(sudoku)
-        print('\ntest 1')
+    while state_i > state and not solved:
         logic_1(sudoku)
-        print_sudoku(sudoku)
-        print("sudoku valid", validate(sudoku))
-        print("\nTest 2 applied")
         logic_2(sudoku)
-        print_sudoku(sudoku)
-        print("sudoku valid", validate(sudoku))
-        print("\nTest 3 applied")
-        logic_3(sudoku)
-        print_sudoku(sudoku)
-        print("sudoku valid", validate(sudoku))
-        print("\nTest 4 applied")
-        logic_4(sudoku)
-        print_sudoku(sudoku)
-        print("sudoku valid", validate(sudoku))
+        if level > 1:
+            logic_3(sudoku)
+            logic_4(sudoku)
         state_i = state
         state = progression(sudoku)
+        valid, solved = validate(sudoku)
+    return sudoku, valid, solved
 
+
+#######################################################################
+# Cycling through the unsolved cells
+#######################################################################
+def solve(sudoku):
+    """
+    Recieves the partially resolved grid and branch on the smallest
+    cell, copy the sudoku, fix the value of the smallest cell to its
+    different possibilities and applies logic tests. If the grid is
+    still unresolved, proceed with another cell, until the sudoku is
+    solved.
+    :param sudoku:
+    :return sudoku, solved:
+    """
+    solution_found = 0
+    sudoku, valid, solved = logic_tests(sudoku)
+
+    if (not valid) or solved:
+        return sudoku, valid, solved
+    else:
+        branch = get_smallest_cell(sudoku)
+        print("\n#####################################\nBranching on {}\n####################################".format(branch))
+        for d in sudoku[branch]:
+            new_sudoku = sudoku.copy()
+            new_sudoku[branch] = d
+            print('solution_found =', solution_found)
+            sudoku_end, valid, solved = solve(new_sudoku)
+            if not valid and solved:
+                return sudoku_end, valid, solved
+            if solved:
+                sudoku_solved = sudoku_end.copy()
+                solution_found += 1
+                print(branch, d)
+                print_sudoku(sudoku_solved)
+                if solution_found == 2:
+                    print('solution_found =', solution_found)
+                    return sudoku_solved, False, True
+                    break
+        if solution_found == 0:
+            return sudoku, False, False
+        elif solution_found == 1:
+            return sudoku_solved, True, True
+        else:
+            return sudoku_solved, False, True
 
 
 if __name__ == "__main__":
-    sudoku = list_to_sudoku(s_1)
+    sudoku = list_to_sudoku(s_5)
     print_sudoku(sudoku)
-    logic_tests(sudoku)
-    print("\nTest 4 applied")
-    logic_4(sudoku)
-    print_sudoku(sudoku)
-
+    solved_sudoku, valid, solved = solve(sudoku)
+    if valid and solved:
+        print("\nSUCCESS!")
+        print('Valid sudoku')
+        print_sudoku(solved_sudoku)
+    elif not valid and solved:
+        print("\nWARNING!")
+        print("There are multiple solutions to this sudoku")
