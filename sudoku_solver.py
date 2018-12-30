@@ -71,6 +71,19 @@ s_5 = [
     '600003000', '000400200', '075000600'
 ]
 
+# Sudoku invalide
+s_6 = [
+    '100000500', '801000000', '000430000',
+    '000000020', '070000030', '800100000',
+    '600003000', '000400200', '075000600'
+]
+
+# Sudoku invalide avec répétition
+s_7 = [
+    '110000500', '801000000', '000430000',
+    '000000020', '070000030', '800100000',
+    '600003000', '000400200', '075000600'
+]
 
 # Some global variables needed by many methods
 rows = 'ABCDEFGHI'
@@ -268,7 +281,7 @@ def validate(sudoku):
     """
     for v in sudoku.values():
         if len(v) < 1:
-            return False, False
+            return 'NO SOLUTION'
     if progression(sudoku) == 81:
         groups = [[r + c for r in 'ABCDEFGHI'] for c in '123456789'] + \
             [[r + c for c in '123456789'] for r in 'ABCDEFGHI'] + \
@@ -286,9 +299,9 @@ def validate(sudoku):
             for cell in group:
                 digits.append(sudoku[cell])
             if sorted(digits) != [str(i) for i in range(1, 10)]:
-                return False, False
-        return True, True
-    return True, False
+                return 'NO SOLUTION'
+        return 'VALID'
+    return 'UNDEFINED'
 
 
 #######################################################################
@@ -437,9 +450,9 @@ def logic_tests(sudoku, level=3):
     :param sudoku: a sudoku dictionary
     : return sudoku, valid, solved:
     """
-    valid, solved = validate(sudoku)
+    status = validate(sudoku)
     state_i, state = 729, progression(sudoku)
-    while state_i > state and not solved:
+    while state_i > state and status == 'UNDEFINED':
         logic_1(sudoku)
         logic_2(sudoku)
         if level > 1:
@@ -447,8 +460,8 @@ def logic_tests(sudoku, level=3):
             logic_4(sudoku)
         state_i = state
         state = progression(sudoku)
-        valid, solved = validate(sudoku)
-    return sudoku, valid, solved
+        status = validate(sudoku)
+    return sudoku, status
 
 
 #######################################################################
@@ -465,45 +478,30 @@ def solve(sudoku):
     :return sudoku, solved:
     """
     solution_found = 0
-    sudoku, valid, solved = logic_tests(sudoku)
-
-    if (not valid) or solved:
-        return sudoku, valid, solved
+    sudoku, status = logic_tests(sudoku)
+    if status != 'UNDEFINED':
+        return sudoku, status
     else:
         branch = get_smallest_cell(sudoku)
-        print("\n#####################################\nBranching on {}\n####################################".format(branch))
         for d in sudoku[branch]:
             new_sudoku = sudoku.copy()
             new_sudoku[branch] = d
-            print('solution_found =', solution_found)
-            sudoku_end, valid, solved = solve(new_sudoku)
-            if not valid and solved:
-                return sudoku_end, valid, solved
-            if solved:
+            sudoku_end, status = solve(new_sudoku)
+            if status == 'MULTIPLE SOLUTIONS':
+                return sudoku_end, status
+            elif status == 'VALID':
                 sudoku_solved = sudoku_end.copy()
                 solution_found += 1
-                print(branch, d)
-                print_sudoku(sudoku_solved)
                 if solution_found == 2:
-                    print('solution_found =', solution_found)
-                    return sudoku_solved, False, True
-                    break
+                    return sudoku_solved, 'MULTIPLE SOLUTIONS'
         if solution_found == 0:
-            return sudoku, False, False
-        elif solution_found == 1:
-            return sudoku_solved, True, True
+            return sudoku, 'NO SOLUTION'
         else:
-            return sudoku_solved, False, True
+            return sudoku_solved, 'VALID'
 
 
 if __name__ == "__main__":
-    sudoku = list_to_sudoku(s_5)
-    print_sudoku(sudoku)
-    solved_sudoku, valid, solved = solve(sudoku)
-    if valid and solved:
-        print("\nSUCCESS!")
-        print('Valid sudoku')
-        print_sudoku(solved_sudoku)
-    elif not valid and solved:
-        print("\nWARNING!")
-        print("There are multiple solutions to this sudoku")
+    for s in [s_0, s_1, s_2, s_3, s_4, s_5, s_6, s_7]:
+        sudoku = list_to_sudoku(s)
+        solved_sudoku, status = solve(sudoku)
+        print("Status =", status)
