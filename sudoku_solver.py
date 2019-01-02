@@ -85,6 +85,13 @@ s_7 = [
     '600003000', '000400200', '075000600'
 ]
 
+# Sudoku LaPresse 1er janvier 2019
+s_8 = [
+    '300065090', '000030000', '007420080',
+    '074000000', '108000407', '230000000',
+    '900530001', '000000000', '005048700'
+]
+
 # Some global variables needed by many methods
 rows = 'ABCDEFGHI'
 cols = '123456789'
@@ -467,7 +474,7 @@ def logic_tests(sudoku, level=3):
 #######################################################################
 # Cycling through the unsolved cells
 #######################################################################
-def solve(sudoku):
+def solve(sudoku, level=3):
     """
     Recieves the partially resolved grid and branch on the smallest
     cell, copy the sudoku, fix the value of the smallest cell to its
@@ -481,7 +488,7 @@ def solve(sudoku):
     sudoku, status = logic_tests(sudoku)
     if status != 'UNDEFINED':
         return sudoku, status
-    else:
+    elif level > 2:
         branch = get_smallest_cell(sudoku)
         for d in sudoku[branch]:
             new_sudoku = sudoku.copy()
@@ -498,10 +505,12 @@ def solve(sudoku):
             return sudoku, 'NO SOLUTION'
         else:
             return sudoku_solved, 'VALID'
+    return sudoku, 'UNSOLVED'
 
 
 if __name__ == "__main__":
-    for s in [s_0, s_1, s_2, s_3, s_4, s_5, s_6, s_7]:
+    for s in [s_8]:
         sudoku = list_to_sudoku(s)
-        solved_sudoku, status = solve(sudoku)
+        print_sudoku(sudoku)
+        solved_sudoku, status = solve(sudoku, 2)
         print("Status =", status)
