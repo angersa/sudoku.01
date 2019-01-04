@@ -92,6 +92,15 @@ s_8 = [
     '900530001', '000000000', '005048700'
 ]
 
+
+# Sudoku généré par le programme:
+s_9 = [
+    '020009700', '405020090', '037000106',
+    '000840000', '300009070', '080060000',
+    '000010087', '000000040', '000543000'
+    ]
+
+
 # Some global variables needed by many methods
 rows = 'ABCDEFGHI'
 cols = '123456789'
@@ -451,7 +460,7 @@ def logic_4(sudoku):
 #######################################################################
 # Logic tests application
 #######################################################################
-def logic_tests(sudoku, level=3):
+def logic_tests(sudoku):
     """
     Applies the three logic tests as long as the sudoku is progressing
     :param sudoku: a sudoku dictionary
@@ -462,9 +471,8 @@ def logic_tests(sudoku, level=3):
     while state_i > state and status == 'UNDEFINED':
         logic_1(sudoku)
         logic_2(sudoku)
-        if level > 1:
-            logic_3(sudoku)
-            logic_4(sudoku)
+        logic_3(sudoku)
+        logic_4(sudoku)
         state_i = state
         state = progression(sudoku)
         status = validate(sudoku)
@@ -474,7 +482,7 @@ def logic_tests(sudoku, level=3):
 #######################################################################
 # Cycling through the unsolved cells
 #######################################################################
-def solve(sudoku, level=3):
+def solve(sudoku):
     """
     Recieves the partially resolved grid and branch on the smallest
     cell, copy the sudoku, fix the value of the smallest cell to its
@@ -488,7 +496,7 @@ def solve(sudoku, level=3):
     sudoku, status = logic_tests(sudoku)
     if status != 'UNDEFINED':
         return sudoku, status
-    elif level > 2:
+    else:
         branch = get_smallest_cell(sudoku)
         for d in sudoku[branch]:
             new_sudoku = sudoku.copy()
@@ -508,9 +516,33 @@ def solve(sudoku, level=3):
     return sudoku, 'UNSOLVED'
 
 
+def eval_level(sudoku):
+    status = validate(sudoku)
+    state_i, state = 729, progression(sudoku)
+    while state_i > state and status == 'UNDEFINED':
+        logic_1(sudoku)
+        logic_2(sudoku)
+        state_i = state
+        state = progression(sudoku)
+        status = validate(sudoku)
+    if status == 'VALID':
+        return 'facile'
+    else:
+        sudoku, status = logic_tests(sudoku)
+    if status == 'VALID':
+        return 'moyen'
+    else:
+        sudoku, status = solve(sudoku)
+        return 'difficile'
+
+
 if __name__ == "__main__":
-    for s in [s_8]:
+    i = 0
+    for s in [s_0, s_1, s_2, s_3, s_4, s_5, s_6, s_7, s_8, s_9]:
+        print(i)
+        i += 1
         sudoku = list_to_sudoku(s)
-        print_sudoku(sudoku)
-        solved_sudoku, status = solve(sudoku, 2)
-        print("Status =", status)
+        solved_sudoku, status = solve(sudoku)
+        print(eval_level(sudoku))
+
+

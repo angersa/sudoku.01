@@ -34,7 +34,7 @@ def random_grid_generator():
     return ss.solve(solved_sudoku)
 
 
-def removable(cell, sudoku, level=3):
+def removable(cell, sudoku):
     """
     checks if a cell can be removed from the grid keeping it valid (no
     multiple solutions).
@@ -45,49 +45,76 @@ def removable(cell, sudoku, level=3):
     """
     sudoku_temp = sudoku.copy()
     sudoku_temp[cell] = '123456789'
-    if ss.solve(sudoku_temp, level)[1] == 'VALID':
+    if ss.solve(sudoku_temp)[1] == 'VALID':
         return True
 
 
-def generate_sudoku(sudoku, level=3):
+def generate_sudoku(sudoku):
+    """
+    Considers all the cells in random order. If the sudoku is still
+    valid after removal, the cell is removed. If not, it is ignored.
+    :param sudoku: complete grid
+    :return sudoku: modified grid
+    """
     cells = [*sudoku]
     removed_cells = []
     shuffle(cells)
     for cell in cells:
-        if removable(cell, sudoku, level):
-            print(cell)
+        if removable(cell, sudoku):
             removed_cells.append(cell)
             sudoku[cell] = '123456789'
-    print(len(removed_cells))
-    for cell in removed_cells:
-        sudoku[cell] = ' '
+    # for cell in removed_cells:
+    #     sudoku[cell] = ' '
     return sudoku
 
 
-def grid_to_latex(sudoku):
+def grid_to_latex(sudoku, param=0):
+    """
+    reads the sudoku dictionary and generates a string corresponding to
+    each cell value in a latex tabular format
+    :param sudoku:
+    :return s: the values in a string in latex tabular
+    """
     s = ''
     for r in 'ABCDEFGHI':
         for c in '12345678':
             cell = r+c
-            s = s + sudoku[cell] + ' & '
-        s = s + sudoku[r + '9'] + '\\\ \n\\hline \n'
+            value = sudoku[cell]
+            if len(value) > 1:
+                s = s + '~' + ' & '
+            else:
+                s = s + value + ' & '
+        value = sudoku[r + '9']
+        if len(value) >1:
+            s = s + '~' + '\\\ \n'
+        else:
+            s = s + value + '\\\ \n'
+        if param == 1:
+            s = s + '\\hline \n'
         if r in 'CF':
-            s = s+ '\\hline \n'
+            s = s + '\\hline \n'
     return s
 
 
 if __name__ == '__main__':
     solved_sudoku, status = random_grid_generator()
-    ss.print_sudoku(solved_sudoku)
-    print(status)
     sudoku = solved_sudoku.copy()
     generate_sudoku(sudoku)
     ss.print_sudoku(sudoku)
-    problem = grid_to_latex(sudoku)
+    sudoku_eval = sudoku.copy()
+    level = ss.eval_level(sudoku_eval)
+    status = ss.solve(sudoku_eval)[1]
+    print(level, status)
+        # generate_sudoku(sudoku)
+        # ss.print_sudoku(sudoku)
+    problem = grid_to_latex(sudoku, 1)
     solution = grid_to_latex(solved_sudoku)
     with open('problem.tex', 'w') as f:
         f.write(problem)
     with open('solution.tex', 'w') as s_file:
         s_file.write(solution)
+    with open('niveau.tex', 'w') as l_file:
+        l_file.write(level)
     os.system("pdflatex --interaction=batchmode sudoku.tex")
     os.system("open sudoku.pdf")
+

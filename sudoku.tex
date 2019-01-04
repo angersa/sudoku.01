@@ -6,12 +6,15 @@
 \usepackage{lastpage}%
 \usepackage[tmargin=4cm,lmargin=4cm]{geometry}%
 \usepackage{rotating}
+\usepackage{array}
 %
 %
 \begin{document}%
-\huge%
-\section*{Sudoku}%
-\begin{tabular}{||c|c|c||c|c|c||c|c|c||}%
+\thispagestyle{empty}
+
+\Huge%
+\section*{\Huge Sudoku \large niveau \input{niveau.tex} }%
+\begin{tabular}{||m{6mm}|m{6mm}|m{6mm}||m{6mm}|m{6mm}|m{6mm}||m{6mm}|m{6mm}|m{6mm}||}%
 \hline%
 \hline%
 \input{problem.tex}
@@ -21,15 +24,17 @@
 
 \vfill
 
+\hfill
 \rotatebox[origin=c]{180}{%
 \tiny%
-
-\begin{tabular}{||c|c|c||c|c|c||c|c|c||}%
-\hline%
+\renewcommand{\tabcolsep}{1pt}
+%\begin{tabular}{|c|c|c||c|c|c||c|c|c|}%
+\begin{tabular}{|ccc|ccc|ccc|}%
+%\hline%
 \hline%
 \input{solution.tex}
 \hline%
-\hline%
+%\hline%
 \end{tabular}
 
 }
